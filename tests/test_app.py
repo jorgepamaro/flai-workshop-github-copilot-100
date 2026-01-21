@@ -112,6 +112,30 @@ class TestSignupForActivity:
         )
         assert response.status_code == 200
 
+    def test_signup_when_activity_at_max_capacity(self, client):
+        """Test signup when activity has reached max participants"""
+        # Create activity with max capacity of 3
+        activities["Full Club"] = {
+            "description": "This club is full",
+            "schedule": "Anytime",
+            "max_participants": 3,
+            "participants": ["student1@mergington.edu", "student2@mergington.edu", "student3@mergington.edu"]
+        }
+        
+        # Try to sign up when at capacity
+        response = client.post(
+            "/activities/Full Club/signup?email=student4@mergington.edu"
+        )
+        assert response.status_code == 400
+        data = response.json()
+        assert data["detail"] == "Activity has reached maximum capacity"
+        
+        # Verify participant was not added
+        activities_response = client.get("/activities")
+        activities_data = activities_response.json()
+        assert "student4@mergington.edu" not in activities_data["Full Club"]["participants"]
+        assert len(activities_data["Full Club"]["participants"]) == 3
+
 
 class TestUnregisterFromActivity:
     """Tests for DELETE /activities/{activity_name}/unregister endpoint"""
